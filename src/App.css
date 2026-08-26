@@ -1,0 +1,10 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #f5f1ea;
+  font-family: 'Pretendard', -apple-system, "Inter", "Noto Sans KR", sans-serif;
+  color: #16140f;
+}
+* { box-sizing: border-box; }
+button { font-family: inherit; cursor: pointer; }
+a { text-decoration: none; color: inherit; }
