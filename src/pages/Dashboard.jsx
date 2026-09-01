@@ -1,21 +1,28 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { T, Btn, Tag } from '../tokens';
-import { Sidebar } from '../components/Sidebar';
-import { apiGet, apiPost, getCachedUser, fieldError } from '../api';
+import { T, Btn, Tag, DashStat } from '../tokens';
+import { AdminLayout } from '../components/AdminLayout';
+import { apiGet, apiPost, fieldError } from '../api';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [applications, setApplications] = useState(null);
+  const [stats, setStats] = useState(null);
   const [loadError, setLoadError] = useState('');
   const [approving, setApproving] = useState(null);
 
   function load() {
-    apiGet('/api/loans/applications/pending/')
-      .then(data => setApplications(data.results))
+    Promise.all([
+      apiGet('/api/loans/applications/pending/'),
+      apiGet('/api/loans/admin/stats/'),
+    ])
+      .then(([apps, s]) => {
+        setApplications(apps.results);
+        setStats(s);
+      })
       .catch(err => {
         if (err.status === 401 || err.status === 403) navigate('/login');
-        else setLoadError('심사 대기 목록을 불러오지 못했습니다.');
+        else setLoadError('대시보드 정보를 불러오지 못했습니다.');
       });
   }
 
@@ -31,48 +38,45 @@ export default function Dashboard() {
     }
   }
 
-  const user = getCachedUser();
-
   return (
-    <div style={{ background: T.bg, fontFamily: T.fSans, color: T.ink, paddingBottom: 80, minHeight: '100vh' }}>
-      <div style={{ padding: '12px 56px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: T.ink, color: T.card, fontSize: 12 }}>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-          <span style={{ fontWeight: 700 }}>peerbridge ADMIN</span>
-          <span style={{ color: 'rgba(255,255,255,0.55)' }}>/ 운영자: {user?.first_name || user?.username}</span>
+    <AdminLayout active="심사 대기">
+      <div style={{ fontSize: 13, color: T.ink2, marginBottom: 8 }}>운영 / 대시보드</div>
+      <h1 style={{ fontFamily: T.fDisp, fontSize: 36, fontWeight: 600, letterSpacing: -1.2, margin: 0 }}>대시보드</h1>
+
+      {loadError && <div style={{ fontSize: 13, color: '#c0392b', marginTop: 16 }}>{loadError}</div>}
+
+      {stats && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: T.gap, marginTop: 24 }}>
+          <DashStat k="전체 회원" v={String(stats.total_users)} unit="명" sub="플랫폼 계정 제외" />
+          <DashStat k="심사 대기" v={String(stats.pending_applications)} unit="건" sub="신규 대출 신청" />
+          <DashStat k="연체" v={String(stats.overdue_count)} unit="건" sub="OVERDUE_1/2 · DEFAULT 합계" />
+          <DashStat k="플랫폼 누적 수수료" v={Number(stats.platform_balance).toLocaleString()} unit="원" sub="플랫폼 계좌 잔액" accent />
         </div>
+      )}
+
+      <div style={{ fontSize: 18, fontWeight: 600, letterSpacing: -0.4, marginTop: 40, marginBottom: 16 }}>
+        심사 대기 신청서 {applications ? <span style={{ color: T.ink3 }}>{applications.length}</span> : null}
       </div>
 
-      <div style={{ display: 'flex' }}>
-        <Sidebar active="심사 대기" />
-        <div style={{ flex: 1, padding: '32px 56px 0 0' }}>
-          <div style={{ fontSize: 13, color: T.ink2, marginBottom: 8 }}>운영 / 심사 대기</div>
-          <h1 style={{ fontFamily: T.fDisp, fontSize: 36, fontWeight: 600, letterSpacing: -1.2, margin: 0 }}>
-            심사 대기 신청서 {applications ? <span style={{ color: T.ink3 }}>{applications.length}</span> : null}
-          </h1>
-
-          {loadError && <div style={{ fontSize: 13, color: '#c0392b', marginTop: 16 }}>{loadError}</div>}
-
-          <div style={{ background: T.card, borderRadius: T.rLg, marginTop: 24 }}>
-            {applications && applications.length === 0 && (
-              <div style={{ padding: '32px', fontSize: 13, color: T.ink2 }}>심사 대기 중인 신청서가 없습니다.</div>
-            )}
-            {applications?.map((a, i) => (
-              <div key={a.id} style={{ padding: '20px 32px', borderBottom: i < applications.length - 1 ? `1px solid ${T.line}` : 'none', display: 'grid', gridTemplateColumns: '1fr 160px 100px 120px 200px', gap: 20, alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 500 }}>{a.purpose}</div>
-                  <div style={{ fontSize: 11, color: T.ink3, marginTop: 2 }}>신청 #{a.id}</div>
-                </div>
-                <div style={{ fontFamily: T.fDisp, fontWeight: 600 }}>{Number(a.amount).toLocaleString()}원</div>
-                <Tag>{a.term_months}개월</Tag>
-                <div style={{ fontSize: 12, color: T.ink2 }}>{new Date(a.created_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })} 신청</div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <Btn size="sm" onClick={() => setApproving(a)}>승인</Btn>
-                  <Btn size="sm" variant="secondary" onClick={() => handleReject(a.id)}>거절</Btn>
-                </div>
-              </div>
-            ))}
+      <div style={{ background: T.card, borderRadius: T.rLg }}>
+        {applications && applications.length === 0 && (
+          <div style={{ padding: '32px', fontSize: 13, color: T.ink2 }}>심사 대기 중인 신청서가 없습니다.</div>
+        )}
+        {applications?.map((a, i) => (
+          <div key={a.id} style={{ padding: '20px 32px', borderBottom: i < applications.length - 1 ? `1px solid ${T.line}` : 'none', display: 'grid', gridTemplateColumns: '1fr 160px 100px 120px 200px', gap: 20, alignItems: 'center' }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 500 }}>{a.purpose}</div>
+              <div style={{ fontSize: 11, color: T.ink3, marginTop: 2 }}>신청 #{a.id}</div>
+            </div>
+            <div style={{ fontFamily: T.fDisp, fontWeight: 600 }}>{Number(a.amount).toLocaleString()}원</div>
+            <Tag>{a.term_months}개월</Tag>
+            <div style={{ fontSize: 12, color: T.ink2 }}>{new Date(a.created_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })} 신청</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Btn size="sm" onClick={() => setApproving(a)}>승인</Btn>
+              <Btn size="sm" variant="secondary" onClick={() => handleReject(a.id)}>거절</Btn>
+            </div>
           </div>
-        </div>
+        ))}
       </div>
 
       {approving && (
@@ -82,7 +86,7 @@ export default function Dashboard() {
           onDone={() => { setApproving(null); load(); }}
         />
       )}
-    </div>
+    </AdminLayout>
   );
 }
 

@@ -50,6 +50,7 @@ export function Tag({ children, tone = 'neutral' }) {
     neutral: { bg: T.bgSoft, fg: T.ink2 },
     green:   { bg: T.greenSoft, fg: T.green },
     dark:    { bg: T.ink, fg: T.card },
+    red:     { bg: 'rgba(196,69,47,0.12)', fg: '#c4452f' },
   };
   const t = tones[tone];
   return (

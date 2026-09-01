@@ -4,10 +4,10 @@ import { T } from '../tokens';
 const items = [
   { k: '대시보드', icon: '◐', path: '/' },
   { k: '심사 대기', icon: '☰', path: '/' },
-  { k: '진행 상품', icon: '◇', path: '/' },
-  { k: '회원 관리', icon: '◯', path: '/' },
-  { k: '리스크', icon: '⚠', path: '/' },
-  { k: '시스템 설정', icon: '⚙', path: '/' },
+  { k: '진행 상품', icon: '◇', path: '/products' },
+  { k: '회원 관리', icon: '◯', path: '/users' },
+  { k: '리스크', icon: '⚠', path: '/risk' },
+  { k: '시스템 설정', icon: '⚙', path: '/settings' },
 ];
 
 export function Sidebar({ active }) {
