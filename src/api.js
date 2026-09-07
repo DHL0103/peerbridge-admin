@@ -1,4 +1,6 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+// ?? 사용: 빈 문자열은 "같은 origin으로 상대경로 호출"이라는 의도된 값이라
+// ||였다면 falsy라서 fallback으로 덮였을 것 — 프로덕션 배포 시 실제로 겪은 버그.
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000';
 
 function authHeaders() {
   const token = localStorage.getItem('pb_access');
